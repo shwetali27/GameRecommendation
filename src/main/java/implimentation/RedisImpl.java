@@ -26,30 +26,32 @@ public class RedisImpl implements RedisInterface {
 	 * To check, fetch visitor_view_hashset from redis. If set exist add new
 	 * visitor to set otherwise create new set.
 	 */
-	public void addVisitorView(RecModel rm) {
+	public void addVisitorView(RecModel pRecModelObject) {
 		redisConnect.select(3);
 
-		/* create visitor_id_set */
-		redisConnect.sadd(prop.getProperty("VISITOR_SET"), rm.getmVisitorID()
+		/* create visitor_id_set*/
+		redisConnect.sadd(prop.getProperty("VISITOR_SET"), pRecModelObject.getmVisitorID()
 				.substring(Integer.parseInt(prop.getProperty("low")), Integer.parseInt(prop.getProperty("high"))));
 
-		/* Fetch visitor_id_hashset from redis */
+		/* Fetch visitor_id_hashset containing the value list of Content id and field value is visitor id from redis */
 		String record = redisConnect.hget(
-				prop.getProperty("VISITOR_ID_VIEW_SET") + ":" + rm.getmVisitorID().substring(
+				prop.getProperty("VISITOR_ID_VIEW_SET") + ":" + pRecModelObject.getmVisitorID().substring(
 						Integer.parseInt(prop.getProperty("low")), Integer.parseInt(prop.getProperty("high"))),
-				rm.getmVisitorID());
+				pRecModelObject.getmVisitorID());
 
 		/* If set exist add new visitor to set otherwise create new set. */
 		Set<String> recordSet = new HashSet<String>();
 		if (record != null) {
-			System.out.println(record);
-			if (Integer.parseInt(rm.getmView()) > 0) {
+			//System.out.println(pRecModelObject.getmVisitorID());
+			//System.out.println("Record"+record);
+			if (Integer.parseInt(pRecModelObject.getmView()) > 0) {
 				recordSet = u.toSet(record);
-				addToViewSet(recordSet, rm.getmVisitorID(), rm.getmContentID());
+				//System.out.println("RecordSet"+recordSet);
+				addToViewSet(recordSet, pRecModelObject.getmVisitorID(), pRecModelObject.getmContentID());
 			}
 
 		} else {
-			addToViewSet(recordSet, rm.getmVisitorID(), rm.getmContentID());
+			addToViewSet(recordSet, pRecModelObject.getmVisitorID(), pRecModelObject.getmContentID());
 		}
 	}
 
@@ -63,6 +65,7 @@ public class RedisImpl implements RedisInterface {
 			log.info(e);
 		}
 		contentIDString = u.toJson(recordSet);
+		//System.out.println("contentIDString"+contentIDString);
 		redisConnect.hset(
 				prop.getProperty("VISITOR_ID_VIEW_SET") + ":" + visitorID.substring(
 						Integer.parseInt(prop.getProperty("low")), Integer.parseInt(prop.getProperty("high"))),
@@ -116,7 +119,8 @@ public class RedisImpl implements RedisInterface {
 	/* To create content_id_set for */
 	public void addContentID(RecModel rm) {
 		redisConnect.select(3);
-		System.out.println("Content id add : " + rm.getmContentID());
+		/*System.out.println("Inside add content id");
+		System.out.println("Content id add : " + rm.getmContentID());*/
 
 		String contentString = null;
 
@@ -126,12 +130,15 @@ public class RedisImpl implements RedisInterface {
 		/* Set contentId json string in content_id_hash */
 		if (Integer.parseInt(rm.getmContentID()) > 100) {
 
+			//System.out.println("ContentString"+contentString);
 			redisConnect.hset(
 					prop.getProperty("CONTENT_ID_SET") + ":" + rm.getmContentID().substring(
 							Integer.parseInt(prop.getProperty("low")), Integer.parseInt(prop.getProperty("high"))),
 					rm.getmContentID(), contentString);
 		} else {
-
+			
+			/*System.out.println(prop.getProperty("CONTENT_ID_SET") + ":" + rm.getmContentID()+" "+rm.getmContentID()+" "+
+					contentString);*/
 			redisConnect.hset(prop.getProperty("CONTENT_ID_SET") + ":" + rm.getmContentID(), rm.getmContentID(),
 					contentString);
 		}
@@ -140,7 +147,7 @@ public class RedisImpl implements RedisInterface {
 	/* Create content map for recommendation using visitor_views_set */
 	public void createContentIDMap() {
 		redisConnect.select(3);
-		String nextView, nextDownload;
+		String nextViewVisitorID, nextDownloadVisitorID;
 		String[] contentIDViewSetArr = null, contentIDDownloadSetArr = null;
 		Set<String> contentIDDownloadSet, contentIDViewSet;
 		Iterator<String> mapViewKeySetIterator, mapDownloadKeySetIterator;
@@ -151,27 +158,29 @@ public class RedisImpl implements RedisInterface {
 			String[] visitorSetArray = (String[]) visitorSet.toArray(new String[visitorSet.size()]);
 			Arrays.sort(visitorSetArray);
 			for (int i = 0; i < visitorSetArray.length; i++) {
-				System.out.print(" " + visitorSetArray[i]);
+				//System.out.print(" " + visitorSetArray[i]);
 			}
 
 			/**/
 			for (int i = 0; i < visitorSetArray.length; i++) {
-				System.out.print(" " + visitorSetArray[i]);
+				//System.out.println("\nvisitorSetArray" + visitorSetArray[i]);
+				//set for visitor_id containing view set starting from particular visitor set i.e. 100 200 etc 
 				Set<String> mapViewKeySet = getVisitorIDSet(prop.getProperty("VISITOR_ID_VIEW_SET"),
 						visitorSetArray[i]);
+				//set for visitor_id containing download set
 				Set<String> mapDownloadKeySet = getVisitorIDSet(prop.getProperty("VISITOR_ID_DOWNLOAD_SET"),
 						visitorSetArray[i]);
-
+				
 				mapViewKeySetIterator = mapViewKeySet.iterator();
 				mapDownloadKeySetIterator = mapDownloadKeySet.iterator();
-
+				
 				while (mapDownloadKeySetIterator.hasNext() || mapViewKeySetIterator.hasNext()) {
 
-					nextView = mapViewKeySetIterator.next();
-					nextDownload = mapDownloadKeySetIterator.next();
-					contentIDViewSet = getcontentIDArray("VISITOR_ID_VIEW_SET", visitorSetArray[i], nextView);
+					nextViewVisitorID = mapViewKeySetIterator.next();//visitor ID
+					nextDownloadVisitorID = mapDownloadKeySetIterator.next();
+					contentIDViewSet = getcontentIDArray("VISITOR_ID_VIEW_SET", visitorSetArray[i], nextViewVisitorID);
 					contentIDDownloadSet = getcontentIDArray("VISITOR_ID_DOWNLOAD_SET", visitorSetArray[i],
-							nextDownload);
+							nextDownloadVisitorID);
 
 					contentIDViewSet.removeAll(contentIDDownloadSet);
 
@@ -179,8 +188,8 @@ public class RedisImpl implements RedisInterface {
 					contentIDDownloadSetArr = (String[]) contentIDDownloadSet
 							.toArray(new String[contentIDDownloadSet.size()]);
 
-					System.out.println("View length : " + contentIDViewSetArr.length + " Download length: "
-							+ contentIDDownloadSetArr.length);
+					/*System.out.println("View length : " + contentIDViewSetArr.length + " Download length: "
+							+ contentIDDownloadSetArr.length);*/
 
 					if ((contentIDDownloadSetArr.length) > 1) {
 
@@ -206,15 +215,22 @@ public class RedisImpl implements RedisInterface {
 
 	private void setContentMap(String[] contentIDSetArr, String value) {
 		String contentString = null;
-
+		//System.out.println("Array length"+contentIDSetArr.length);
+		
 		for (int k = 0; k < contentIDSetArr.length; k++) {
 			for (int j = 0; j < contentIDSetArr.length; j++) {
 				if (contentIDSetArr[k] != contentIDSetArr[j]) {
+					/*getting content string from redis data for
+					 * for mapping between two content ids
+					*/
 					contentString = getContentMap(contentIDSetArr[k], contentIDSetArr[j]);
 					if (contentString != null) {
-						contentString = String.valueOf((Integer.parseInt(contentString) + 1));
+						//System.out.println("contentString before"+contentString);
+						contentString = String.valueOf((Integer.parseInt(contentString) + Integer.parseInt(value)));
+						//System.out.println("contentString"+contentString);
 						setContentMapValue(contentIDSetArr[k], contentIDSetArr[j], contentString);
 					} else {
+						//System.out.println("contentString"+contentString);
 						setContentMapValue(contentIDSetArr[k], contentIDSetArr[j], value);
 					}
 				}
@@ -226,14 +242,15 @@ public class RedisImpl implements RedisInterface {
 		/* To import the map of each visitor_id key */
 		Map<String, String> visitorMapView = redisConnect.hgetAll(setName + ":" + setKey);
 		Set<String> mapKeySet = visitorMapView.keySet();
+		//returns the key values for perticular hashmap
 		return mapKeySet;
 	}
 
-	private Set<String> getcontentIDArray(String setName, String setKey, String next) {
+	private Set<String> getcontentIDArray(String setName, String setKey, String nextVisitorID) {
 		/*
 		 * To import json of content_id of view_set for particular visitor_id
 		 */
-		String contentIDList = redisConnect.hget(prop.getProperty(setName) + ":" + setKey, next);
+		String contentIDList = redisConnect.hget(prop.getProperty(setName) + ":" + setKey, nextVisitorID);
 
 		/*
 		 * To convert json containing content_id of view_set for particular
@@ -258,16 +275,17 @@ public class RedisImpl implements RedisInterface {
 	}
 
 	/* Fetch from content_map */
-	private String getContentMap(String visitorID1, String visitorID2) {
+	private String getContentMap(String contentID1, String contentID2) {
+		//System.out.println(contentID1+":::::::::"+contentID2);
 		String contentString;
-		if (Integer.parseInt(visitorID1) > 100) {
+		if (Integer.parseInt(contentID1) > 100) {
 			contentString = redisConnect.hget(
-					prop.getProperty("CONTENT_MAP") + ":" + visitorID1.substring(
+					prop.getProperty("CONTENT_MAP") + ":" + contentID1.substring(
 							Integer.parseInt(prop.getProperty("low")), Integer.parseInt(prop.getProperty("high"))),
-					visitorID1 + ":" + visitorID2);
+					contentID1 + ":" + contentID2);
 		} else {
-			contentString = redisConnect.hget(prop.getProperty("CONTENT_MAP") + ":" + visitorID1,
-					visitorID1 + ":" + visitorID2);
+			contentString = redisConnect.hget(prop.getProperty("CONTENT_MAP") + ":" + contentID1,
+					contentID1 + ":" + contentID2);
 		}
 		return contentString;
 	}
@@ -288,16 +306,15 @@ public class RedisImpl implements RedisInterface {
 		String[] contentIDDownloadSetArr = (String[]) contentIDDownloadSet
 				.toArray(new String[contentIDDownloadSet.size()]);
 
-		System.out.println(
-				"View length : " + contentIDViewSetArr.length + " Download length: " + contentIDDownloadSetArr.length);
-
+		/*System.out.println(
+				"View length : " + contentIDViewSetArr.length + " Download length: " + contentIDDownloadSetArr.length);*/
 		if ((contentIDDownloadSetArr.length) > 1) {
-			System.out.println("inside download");
+			//System.out.println("inside download");
 			setContentMap(contentIDDownloadSetArr, prop.getProperty("two"));
 
 		}
 		if ((contentIDViewSetArr.length) > 1) {
-			System.out.println("inside view");
+			//System.out.println("inside view");
 			setContentMap(contentIDViewSetArr, prop.getProperty("one"));
 
 		}
@@ -309,32 +326,39 @@ public class RedisImpl implements RedisInterface {
 		Map<String, String> contentMap = redisConnect.hgetAll(prop.getProperty("CONTENT_MAP") + ":" + contentID
 				.substring(Integer.parseInt(prop.getProperty("low")), Integer.parseInt(prop.getProperty("high"))));
 
-		/* Getting keys set from content_map */
+		/* Getting field values set from content_map eg: 1916233:1920562*/
 		Set<String> contentIDKeySet = contentMap.keySet();
 
 		String[] contentIDKeyArray = (String[]) contentIDKeySet.toArray(new String[contentIDKeySet.size()]);
 
+		System.out.println(contentIDKeyArray.length);
 		/*
 		 * To create ordered set of content_id for suggestion with content_map
 		 * values as score
 		 */
 		for (int i = 0; i < contentIDKeyArray.length; i++) {
 			String[] contentIDValues = contentIDKeyArray[i].split(":");
-
+			
 			if (contentIDValues[0].equals(contentID)) {
+				//System.out.println(contentIDValues[0]+" "+contentIDValues[1]);
 				redisConnect.zadd(
 						prop.getProperty("SUGGESTION_LIST") + ":"
 								+ contentIDValues[Integer.parseInt(prop.getProperty("low"))],
 						Double.parseDouble(contentMap.get(contentIDKeyArray[i])),
 						contentIDValues[Integer.parseInt(prop.getProperty("one"))]);
+				/*System.out.println(prop.getProperty("SUGGESTION_LIST") + ":"
+								+ contentIDValues[Integer.parseInt(prop.getProperty("low"))]+"-----"+
+						Double.parseDouble(contentMap.get(contentIDKeyArray[i]))+"-----:"+
+						contentIDValues[Integer.parseInt(prop.getProperty("one"))]);*/
 			}
 		}
 
 		/* Getting suggestion set from redis for given content_id */
 		Set<String> redisSuggestionList = redisConnect.zrevrange(prop.getProperty("SUGGESTION_LIST") + ":" + contentID,
 				0, -1);
-		System.out.println("Size = " + redisSuggestionList.size());
+		System.out.println(redisSuggestionList.size());
 
+		//visitorID="479a7d0a6a36534b";
 		if (visitorID != null) {
 			/* Fetching download_set for given visitor_id */
 			String visitorContentIDDownload = redisConnect.hget(
@@ -353,6 +377,7 @@ public class RedisImpl implements RedisInterface {
 		// long result = redisConnect.del(prop.getProperty("SUGGESTION_LIST") +
 		// ":" + contentID);
 
+		
 		//System.out.println("Result : " + res + " Size = " + redisSuggestionList.size());
 		return redisSuggestionList;
 	}

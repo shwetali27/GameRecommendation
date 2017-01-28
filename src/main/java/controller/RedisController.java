@@ -41,6 +41,7 @@ public class RedisController {
 	
 	@RequestMapping(value="/getContent" ,method=RequestMethod.GET)
 	public ModelAndView getByContent(@ModelAttribute("recmodel") RecModel rm){
+	
 		System.out.println("Inside redis controller: contentid :"+rm.getmContentID());
 		List<RecModel>suggestionList=new ArrayList<RecModel>();
 		Set<String> suggestionSet= recSerImpl.getSuggestion(rm);

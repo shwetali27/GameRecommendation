@@ -1,5 +1,6 @@
 package dao;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.Session;
@@ -20,7 +21,7 @@ public class RecDaoImpl implements RecDaoInterface {
 		if (getByContentID(record.getmContentID())==null) {
 			Session session = sessionFactory.openSession();
 			Transaction tr = session.beginTransaction();
-			System.out.println("Inside dao add " + record.getmVisitorID());
+			//System.out.println("Inside dao add " + record.getmVisitorID());
 			try {
 				System.out.println("Transaction started..");
 				session.save(record);
@@ -31,7 +32,7 @@ public class RecDaoImpl implements RecDaoInterface {
 				session.close();
 			}
 		}else{
-			System.out.println("Already exists");
+			//System.out.println("Already exists");
 		}
 	}
 
@@ -62,11 +63,12 @@ public class RecDaoImpl implements RecDaoInterface {
 		query.setParameter("ContentID", pContentID);
 		//query.
 		//List<String> result = query.getResultList(); // getting hql result
+		
 		List<RecModel> res = query.getResultList();
-		System.out.println("Inside getcontentbyid : "+res.size());
+		//System.out.println("Inside getcontentbyid : "+res.size());
 		// checking result
 		if (res != null && res.size() > 0){
-			System.out.println("Inside getcontentbyid : contentid "+res.get(0).getmContentID());
+			//System.out.println("Inside getcontentbyid : contentid "+res.get(0).getmContentID());
 			return res.get(0);}
 		else
 			return null;
@@ -77,7 +79,7 @@ public class RecDaoImpl implements RecDaoInterface {
 	public RecModel getByContentName(String pContentName) {
 		Session session = sessionFactory.openSession();
 
-		Query<RecModel> query = session.createQuery("from RecModel u where u.mContentName= :ContentName");
+		Query<RecModel> query = session.createQuery("from RecModel u where u.mContentName like :ContentName");
 		query.setParameter("ContentName", pContentName);
 		//query.
 		//List<String> result = query.getResultList(); // getting hql result
@@ -89,6 +91,27 @@ public class RecDaoImpl implements RecDaoInterface {
 			return res.get(0);}
 		else
 			return null;
+
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<String> getSuggestion(String pContentName) {
+		Session session = sessionFactory.openSession();
+
+		System.out.println("Inside Suggestion"+pContentName);
+		Query query = session.createQuery("from RecModel u where u.mContentName like :ContentName");
+		query.setString("ContentName", pContentName+"%");
+		
+		List<RecModel> res = query.list();
+		System.out.println(res.size());
+		List<String> list = new ArrayList();
+		for(int i=0;i<res.size();i++){
+			list.add(res.get(i).getmContentName());
+		}
+		System.out.println("Result :-"+list);
+		System.out.println("Inside getcontentbyname : "+list.size());
+		// checking result
+		return list;
 
 	}
 }

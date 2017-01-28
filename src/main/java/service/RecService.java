@@ -1,5 +1,6 @@
 package service;
 
+import java.util.List;
 import java.util.Set;
 
 import model.RecModel;
@@ -20,4 +21,7 @@ public interface RecService {
 	public RecModel getbyContentID(String pContentID);
 
 	public RecModel getbyContentName(String pContentName);
+	
+	public List<String> getSuggestion(String pContentName);
+
 }

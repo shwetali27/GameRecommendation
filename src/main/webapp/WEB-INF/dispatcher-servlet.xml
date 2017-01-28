@@ -25,5 +25,7 @@
 	<!-- <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"> 
 		<property name="locations"> <list> <value>classpath:resource.properties</value> 
 		</list> </property> </bean> -->
-
+		
+	<mvc:resources mapping="/resources/**" location="/resources/" />   
+	
 </beans>

@@ -1,5 +1,6 @@
 package implimentation;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -15,24 +16,25 @@ import model.RecModel;
 
 public class Utility {
 
-	Gson obj = new Gson();
+	Gson gsonObj = new Gson();
 
 	public String toJson(Set<String> contentIDSet) {
-		return obj.toJson(contentIDSet);
+		return gsonObj.toJson(contentIDSet);
 	}
 
 	public Set<String> toSet(String contentIDString) {
-		return obj.fromJson(contentIDString, new TypeToken<Set<String>>() {
+		//System.out.println("Content Id inside utility"+contentIDString);
+		return gsonObj.fromJson(contentIDString, new TypeToken<Set<String>>() {
 		}.getType());
 	}
 
 	public List<String> toList(String contentIDString) {
-		return obj.fromJson(contentIDString, new TypeToken<List<String>>() {
+		return gsonObj.fromJson(contentIDString, new TypeToken<List<String>>() {
 		}.getType());
 	}
 	
 	public RecModel toModel(String visitorIDString){
-		return obj.fromJson(visitorIDString, RecModel.class);
+		return gsonObj.fromJson(visitorIDString, RecModel.class);
 	}
 
 	public String createContent(String contentName, String categoryName) {
@@ -43,7 +45,7 @@ public class Utility {
 	}
 	
 	public RecModel fromJson(String str){
-		return obj.fromJson(str, RecModel.class);
+		return gsonObj.fromJson(str, RecModel.class);
 	}
 
 	public Properties getProperties() {
@@ -52,19 +54,19 @@ public class Utility {
 		try {
 
 			String propFileName = "/home/bridgeit/Music/GameRecommendation/resource.properties";
+			FileInputStream file = new FileInputStream(getClass().getClassLoader().getResource("resource.properties").getFile());
+
 			// passing propFileName to the FileInputStream class object
 			FileInputStream fis;
 
 			fis = new FileInputStream(propFileName);
-			if (fis != null) {
+			if (file != null) {
 				// calling load method of Properties class
-				prop.load(fis);
+				prop.load(file);
 			} 
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

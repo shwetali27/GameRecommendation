@@ -1,5 +1,7 @@
 package recInterface;
 
+import java.util.List;
+
 import org.springframework.stereotype.Repository;
 
 import model.RecModel;
@@ -12,4 +14,6 @@ public interface RecDaoInterface {
 	public RecModel getByContentID(String pContentID);
 	
 	public RecModel getByContentName(String pContentName);
+	
+	public List<String> getSuggestion(String pContentName);
 }
